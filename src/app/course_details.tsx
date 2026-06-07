@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 
 import { useLocalSearchParams, router } from "expo-router";
@@ -26,6 +27,18 @@ export default function CourseDetails() {
 
   const [course, setCourse] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [enrolled, setEnrolled] = useState(false);
+
+  const showMessage = (
+    title: string,
+    message: string
+  ) => {
+    if (Platform.OS === "web") {
+      window.alert(`${title}\n\n${message}`);
+    } else {
+      Alert.alert(title, message);
+    }
+  };
 
   useEffect(() => {
     loadCourse();
@@ -42,8 +55,24 @@ export default function CourseDetails() {
           ...docSnap.data(),
         });
       }
+
+      const user = auth.currentUser;
+
+      if (user) {
+        const q = query(
+          collection(db, "enrollments"),
+          where("userId", "==", user.uid),
+          where("courseId", "==", String(id))
+        );
+
+        const enrollmentSnap = await getDocs(q);
+
+        if (!enrollmentSnap.empty) {
+          setEnrolled(true);
+        }
+      }
     } catch (error) {
-      console.log(error);
+      console.log("Load Course Error:", error);
     }
 
     setLoading(false);
@@ -54,7 +83,7 @@ export default function CourseDetails() {
       const user = auth.currentUser;
 
       if (!user) {
-        Alert.alert(
+        showMessage(
           "Login Required",
           "Please login first"
         );
@@ -64,44 +93,57 @@ export default function CourseDetails() {
       const q = query(
         collection(db, "enrollments"),
         where("userId", "==", user.uid),
-        where("courseId", "==", id)
+        where("courseId", "==", String(id))
       );
 
       const existingEnrollment = await getDocs(q);
 
       if (!existingEnrollment.empty) {
-        Alert.alert(
+        setEnrolled(true);
+
+        showMessage(
           "Already Enrolled",
           `You are already enrolled in ${course?.title}`
         );
+
         return;
       }
 
-      await addDoc(
-        collection(db, "enrollments"),
-        {
-          userId: user.uid,
-          userEmail: user.email,
-          courseId: id,
-          courseTitle: course.title,
-          price: course.price,
-          enrolledAt: new Date().toISOString(),
-          status: "active",
-        }
-      );
+     if (!course) {
+  Alert.alert(
+    "Error",
+    "Course data not loaded"
+  );
+  return;
+}
 
-      Alert.alert(
-        "Success",
-        `Enrolled in ${course.title}`
+await addDoc(
+  collection(db, "enrollments"),
+  {
+    userId: user.uid,
+    userEmail: user.email || "",
+    courseId: String(id),
+    courseTitle: String(course?.title || ""),
+    description: String(course?.description || ""),
+    price: Number(course?.price || 0),
+    enrolledAt: new Date().toISOString(),
+    status: "active",
+  }
+);
+      setEnrolled(true);
+
+      showMessage(
+        "Enrollment Successful 🎉",
+        `You have enrolled in ${course.title}`
       );
 
       router.replace("/my_courses");
     } catch (error: any) {
-      console.log(error);
+      console.log("Enrollment Error:", error);
 
-      Alert.alert(
+      showMessage(
         "Enrollment Failed",
-        error.message
+        error.message || "Something went wrong"
       );
     }
   };
@@ -110,6 +152,7 @@ export default function CourseDetails() {
     return (
       <View style={styles.loader}>
         <ActivityIndicator size="large" />
+        <Text>Loading Course...</Text>
       </View>
     );
   }
@@ -137,11 +180,17 @@ export default function CourseDetails() {
       </Text>
 
       <TouchableOpacity
-        style={styles.button}
+        style={[
+          styles.button,
+          enrolled && styles.enrolledButton,
+        ]}
         onPress={handleEnroll}
+        disabled={enrolled}
       >
         <Text style={styles.buttonText}>
-          Enroll Now
+          {enrolled
+            ? "Already Enrolled ✅"
+            : "Enroll Now"}
         </Text>
       </TouchableOpacity>
     </View>
@@ -176,6 +225,10 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 10,
     marginTop: 30,
+  },
+
+  enrolledButton: {
+    backgroundColor: "#16A34A",
   },
 
   buttonText: {

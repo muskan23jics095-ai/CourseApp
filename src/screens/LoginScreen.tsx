@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Platform,
 } from "react-native";
 
 import { signInWithEmailAndPassword } from "firebase/auth";
@@ -16,31 +17,61 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const showMessage = (
+    title: string,
+    message: string
+  ) => {
+    if (Platform.OS === "web") {
+      window.alert(`${title}\n\n${message}`);
+    } else {
+      Alert.alert(title, message);
+    }
+  };
+
   const handleLogin = async () => {
     try {
+      if (!email || !password) {
+        showMessage(
+          "Error",
+          "Please enter email and password"
+        );
+        return;
+      }
+
       await signInWithEmailAndPassword(
         auth,
         email,
         password
       );
 
-      Alert.alert("Success", "Login Successful");
+      showMessage(
+        "Success 🎉",
+        "Login Successful"
+      );
 
       router.replace("/dashboard");
     } catch (error: any) {
-      Alert.alert("Login Failed", error.message);
+      console.log("Login Error:", error);
+
+      showMessage(
+        "Login Failed",
+        error.message
+      );
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Student Login</Text>
+      <Text style={styles.title}>
+        Student Login
+      </Text>
 
       <TextInput
         placeholder="Email"
         style={styles.input}
         value={email}
         onChangeText={setEmail}
+        autoCapitalize="none"
       />
 
       <TextInput

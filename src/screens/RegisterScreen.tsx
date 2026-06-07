@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import {
-  View,
+  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
   Alert,
-  ScrollView,
+  Platform,
 } from "react-native";
 
 import { createUserWithEmailAndPassword } from "firebase/auth";
@@ -24,6 +24,17 @@ export default function SignupScreen() {
   const [confirmPassword, setConfirmPassword] =
     useState("");
 
+  const showMessage = (
+    title: string,
+    message: string
+  ) => {
+    if (Platform.OS === "web") {
+      window.alert(`${title}\n\n${message}`);
+    } else {
+      Alert.alert(title, message);
+    }
+  };
+
   const handleSignup = async () => {
     try {
       if (
@@ -34,7 +45,7 @@ export default function SignupScreen() {
         !password ||
         !confirmPassword
       ) {
-        Alert.alert(
+        showMessage(
           "Missing Information",
           "Please fill all fields"
         );
@@ -42,7 +53,7 @@ export default function SignupScreen() {
       }
 
       if (mobile.length !== 10) {
-        Alert.alert(
+        showMessage(
           "Invalid Mobile Number",
           "Enter a valid 10-digit mobile number"
         );
@@ -50,7 +61,7 @@ export default function SignupScreen() {
       }
 
       if (password !== confirmPassword) {
-        Alert.alert(
+        showMessage(
           "Password Error",
           "Passwords do not match"
         );
@@ -64,25 +75,27 @@ export default function SignupScreen() {
           password
         );
 
-      //const user = userCredential.user;
+      const user = userCredential.user;
 
-      //await setDoc(doc(db, "users", user.uid), {
-       // uid: user.uid,
-       // name,
-       // mobile,
-       // whatsapp,
-       // email,
-       // createdAt: new Date().toISOString(),
-      //});
+      await setDoc(doc(db, "users", user.uid), {
+        uid: user.uid,
+        name,
+        mobile,
+        whatsapp,
+        email,
+        createdAt: new Date().toISOString(),
+      });
 
-      Alert.alert(
-        "Success",
+      showMessage(
+        "Success 🎉",
         "Account Created Successfully"
       );
 
       router.replace("/login");
     } catch (error: any) {
-      Alert.alert(
+      console.log("Registration Error:", error);
+
+      showMessage(
         "Registration Failed",
         error.message
       );

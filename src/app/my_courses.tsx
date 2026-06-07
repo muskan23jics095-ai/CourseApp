@@ -42,12 +42,23 @@ export default function MyCourses() {
 
       const snapshot = await getDocs(q);
 
-      const data = snapshot.docs.map((doc) => ({
+      const rawData = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
 
-      setCourses(data);
+      // Remove duplicate courses
+      const uniqueCourses = rawData.filter(
+        (course, index, self) =>
+          index ===
+          self.findIndex(
+            (c) => c.courseId === course.courseId
+          )
+      );
+
+      setCourses(uniqueCourses);
+
+      console.log("My Courses:", uniqueCourses);
     } catch (error) {
       console.log("Error:", error);
     }
@@ -67,6 +78,10 @@ export default function MyCourses() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>My Courses</Text>
+
+      <Text style={styles.subtitle}>
+        Enrolled Courses: {courses.length}
+      </Text>
 
       {courses.length === 0 ? (
         <View style={styles.emptyContainer}>
@@ -90,19 +105,25 @@ export default function MyCourses() {
           renderItem={({ item }) => (
             <View style={styles.card}>
               <Text style={styles.courseTitle}>
-                {item.courseTitle || item.courseId}
+                {item.courseTitle}
+              </Text>
+
+              <Text style={styles.price}>
+                ₹{item.price}
               </Text>
 
               <Text style={styles.status}>
                 Status: {item.status}
               </Text>
 
-              <Text>
-                Enrolled:
+              <Text style={styles.date}>
+                Enrolled On:
               </Text>
 
-              <Text>
-                {item.enrolledAt}
+              <Text style={styles.dateValue}>
+                {new Date(
+                  item.enrolledAt
+                ).toLocaleDateString()}
               </Text>
             </View>
           )}
@@ -123,6 +144,10 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "bold",
     marginTop: 50,
+  },
+
+  subtitle: {
+    color: "#64748B",
     marginBottom: 20,
   },
 
@@ -141,7 +166,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#2563EB",
     padding: 15,
     borderRadius: 10,
-    width: 200,
+    width: 220,
   },
 
   buttonText: {
@@ -153,19 +178,33 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#fff",
     padding: 20,
-    borderRadius: 10,
+    borderRadius: 12,
     marginBottom: 12,
   },
 
   courseTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
-    marginBottom: 8,
+  },
+
+  price: {
+    color: "#16A34A",
+    fontSize: 16,
+    marginTop: 5,
   },
 
   status: {
     color: "green",
-    marginBottom: 5,
+    marginTop: 10,
+  },
+
+  date: {
+    marginTop: 10,
+    fontWeight: "600",
+  },
+
+  dateValue: {
+    color: "#555",
   },
 
   loader: {

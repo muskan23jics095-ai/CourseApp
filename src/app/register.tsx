@@ -4,6 +4,7 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { router } from "expo-router";
 import { auth, db } from "../firebase/config";
+import { showMessage } from "../utils/showMessage";
 
 export default function RegisterScreen() {
   const [name, setName] = useState("");
@@ -13,56 +14,63 @@ export default function RegisterScreen() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const handleRegister = async () => {
-    try {
-      if (
-        !name ||
-        !mobile ||
-        !whatsapp ||
-        !email ||
-        !password ||
-        !confirmPassword
-      ) {
-        Alert.alert("Error", "Please fill all fields");
-        return;
-      }
-
-      if (password !== confirmPassword) {
-        Alert.alert("Error", "Passwords do not match");
-        return;
-      }
-
-      const userCredential =
-        await createUserWithEmailAndPassword(
-          auth,
-          email,
-          password
-        );
-
-      const user = userCredential.user;
-
-      await setDoc(doc(db, "users", user.uid), {
-        name,
-        mobile,
-        whatsapp,
-        email,
-        createdAt: new Date().toISOString(),
-      });
-
-     Alert.alert(
-  "Success",
-  "Account Created Successfully",
-  [
-    {
-      text: "OK",
-      onPress: () => router.replace("/login"),
-    },
-  ]
-);
-    } catch (error: any) {
-      Alert.alert("Registration Failed", error.message);
+const handleRegister = async () => {
+  try {
+    if (
+      !name ||
+      !mobile ||
+      !whatsapp ||
+      !email ||
+      !password ||
+      !confirmPassword
+    ) {
+      showMessage(
+        "Error",
+        "Please fill all fields"
+      );
+      return;
     }
-  };
+
+    if (password !== confirmPassword) {
+      showMessage(
+        "Error",
+        "Passwords do not match"
+      );
+      return;
+    }
+
+    const userCredential =
+      await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+    const user = userCredential.user;
+
+    await setDoc(doc(db, "users", user.uid), {
+      name,
+      mobile,
+      whatsapp,
+      email,
+      createdAt: new Date().toISOString(),
+    });
+
+    showMessage(
+      "Success 🎉",
+      "Account Created Successfully"
+    );
+
+    router.replace("/login");
+  } catch (error: any) {
+    console.log("Registration Error:", error);
+
+    showMessage(
+      "Registration Failed",
+      error.message
+    );
+  }
+};
 
   return (
     <ScrollView
